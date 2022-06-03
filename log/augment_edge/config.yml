@@ -1,0 +1,27 @@
+data:
+    augment_edge: true
+    num_classes: 4
+    num_workers: 12
+    path: ../data
+    seq_len: 512
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:1
+    dropout: 0.1
+    encoder: ../models/Lawformer
+    loss_fn: MSELoss
+optimizer:
+    lr: 2.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+title: augment_edge
+train:
+    batch_size: 22
+    eval_batch_size: 100
+    num_epochs: 10
+use_wandb: false
