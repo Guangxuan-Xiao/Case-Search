@@ -98,13 +98,16 @@ class Trainer:
                         for i in range(len(query_ridxs))]
         total_candidate_ridxs = [total_candidate_ridxs[query_ridxs_idx == i]
                                  for i in range(len(query_ridxs))]
-        predictions = {}
+        predictions, scores = {}, {}
         for idx, query_ridx in enumerate(query_ridxs):
             predictions[str(query_ridx.item())] = total_candidate_ridxs[idx][torch.argsort(
                 total_scores[idx], descending=True)][:30].tolist()
             predictions[str(query_ridx.item())] = [str(x)
                                                    for x in predictions[str(query_ridx.item())]]
+            scores[str(query_ridx.item())] = {str(k.item()): v.item() for k, v in zip(
+                total_candidate_ridxs[idx], total_scores[idx])}
         self.logger.write_predictions(predictions)
+        self.logger.write_scores(scores)
 
     def train(self):
         for self.epoch in range(0, self.config.train.num_epochs + 1):

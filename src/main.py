@@ -18,8 +18,10 @@ if __name__ == "__main__":
                              config=config, name=config.title, reinit=True)
         seed_all(seed)
         logger = Logger(config, seed)
-        model = create_model(config)
         device = torch.device(config.model.device)
+        model = create_model(config)
+        if len(config.model.device_ids) > 1:
+            model = torch.nn.DataParallel(model, device_ids=config.model.device_ids)
         model.to(device)
         loaders = create_loaders(config)
         optimizer = create_optimizer(config, model)

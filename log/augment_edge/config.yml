@@ -23,5 +23,5 @@ title: augment_edge
 train:
     batch_size: 22
     eval_batch_size: 100
-    num_epochs: 10
+    num_epochs: 5
 use_wandb: false

@@ -40,3 +40,7 @@ class Logger:
     def write_predictions(self, predictions):
         with open(osp.join(self.log_dir, 'predictions.json'), 'w+') as f:
             json.dump(predictions, f)
+
+    def write_scores(self, scores):
+        with open(osp.join(self.log_dir, 'scores.json'), 'w+') as f:
+            json.dump(scores, f)

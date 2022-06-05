@@ -1,0 +1,29 @@
+data:
+    augmentation: false
+    num_classes: 4
+    num_workers: 12
+    path: ../data/origin
+    seq_len: 1024
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:2
+    dropout: 0.1
+    encoder: ../models/Lawformer
+    loss_fn: MSELoss
+optimizer:
+    lr: 2.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+- 4
+- 5
+title: longer-seq
+train:
+    batch_size: 10
+    eval_batch_size: 150
+    num_epochs: 5
+use_wandb: false

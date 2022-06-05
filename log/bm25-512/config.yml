@@ -1,0 +1,31 @@
+data:
+    augmentation: false
+    num_classes: 4
+    num_workers: 12
+    path: ../data/bm25
+    seq_len: 512
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:2
+    device_ids:
+    - 2
+    - 3
+    dropout: 0.1
+    encoder: ../models/Lawformer
+    head: cosine
+    loss_fn: MSELoss
+optimizer:
+    lr: 1.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+title: bm25-512
+train:
+    batch_size: 40
+    eval_batch_size: 100
+    num_epochs: 3
+use_wandb: false

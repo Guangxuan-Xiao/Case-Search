@@ -4,6 +4,7 @@ import numpy as np
 import os.path as osp
 from icecream import ic
 from tqdm import trange
+from copy import copy
 
 class Batch(NamedTuple):
     query_inputs: dict
@@ -22,7 +23,7 @@ class Batch(NamedTuple):
         )
 
 
-def pad_sequence(sequences, max_len, pad_value=0):
+def pad_sequence(sequences, max_len, pad_value=0, is_inputs=False):
     # sequences: Tensor [batch_size, max_len]
     # max_len: int
     # pad_value: int
@@ -34,7 +35,32 @@ def pad_sequence(sequences, max_len, pad_value=0):
         sequences = torch.cat((sequences, pad), dim=1)
     else:
         sequences = sequences[:, :max_len]
+        if is_inputs:
+            sequences[:, -1] = 102
     return sequences
+
+
+def crop_inputs(inputs, seq_len):
+    input_ids = inputs['input_ids']
+    current_len = input_ids.size(1)
+    if current_len <= seq_len:
+        return inputs
+    crop_len = current_len - seq_len
+    sep_indices = torch.nonzero(input_ids == 102)
+    start_idx, end_idx = 1, current_len - 1 - crop_len
+    if sep_indices.size(0) > 1:  # no crime
+        start_idx = sep_indices[-2][1].item() + 1
+    if start_idx >= end_idx:
+        return inputs
+    ret_inputs = {}
+    select_idx = torch.randint(start_idx, end_idx, (1,)).item()
+    input_ids = [input_ids[:, :select_idx],
+                 input_ids[:, select_idx + crop_len:]]
+    ret_inputs['input_ids'] = torch.cat(input_ids, dim=1)
+    assert ret_inputs['input_ids'].size(1) == seq_len
+    ret_inputs['attention_mask'] = inputs['attention_mask'][:, :seq_len]
+    ret_inputs['token_type_ids'] = inputs['token_type_ids'][:, :seq_len]
+    return ret_inputs
 
 
 def augment_edges(edges, edges_graph_ids, labels):
@@ -47,16 +73,12 @@ def augment_edges(edges, edges_graph_ids, labels):
     for i in trange(num_graphs):
         new_edges, new_labels = [], []
         cluster_nodes = [e[1] for e in edges[i][labels[i] == 3]]
-        for j in range(len(cluster_nodes)):
-            for k in range(j + 1, len(cluster_nodes)):
-                new_edges.append([cluster_nodes[j], cluster_nodes[k]])
-                new_labels.append(3)
-        other_labels = labels[i][labels[i] != 3]
-        other_edges = edges[i][labels[i] != 3]
-        for e, l in zip(other_edges, other_labels):
-            for node in cluster_nodes:
-                new_edges.append([node, e[1]])
-                new_labels.append(l)
+        for node in cluster_nodes:
+            edges_copy = edges[i][edges[i][:, 1] != node].copy()
+            labels_copy = labels[i][edges[i][:, 1] != node].copy()
+            edges_copy[:, 0] = node
+            new_edges += edges_copy.tolist()
+            new_labels += labels_copy.tolist()
         new_edges, new_labels = np.array(new_edges), np.array(new_labels)
         if new_edges.size > 0:
             edges[i] = np.concatenate([edges[i], new_edges])
@@ -89,6 +111,7 @@ class Dataset(torch.utils.data.Dataset):
             self.edges, self.labels = augment_edges(
                 self.edges, self.edge_graph_ids, self.labels)
             ic(f'Augmented {split} edges, After E = {len(self.edges)}')
+        self.crop_candidate = 'train' in split and config.data.crop_candidate
         self.split = split
         self.seq_len = config.data.seq_len
 
@@ -97,15 +120,18 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         edge = self.edges[idx]
-        query_inputs = self.inputs[edge[0]]
-        candidate_inputs = self.inputs[edge[1]]
+        query_inputs = copy(self.inputs[edge[0]])
+        candidate_inputs = copy(self.inputs[edge[1]])
+        if self.crop_candidate:
+            candidate_inputs = crop_inputs(candidate_inputs, self.seq_len)
         for key in query_inputs.keys():
-            query_inputs[key] = pad_sequence(query_inputs[key], self.seq_len)
+            query_inputs[key] = pad_sequence(
+                query_inputs[key], self.seq_len, is_inputs=key == 'inputs')
             candidate_inputs[key] = pad_sequence(
-                candidate_inputs[key], self.seq_len)
+                candidate_inputs[key], self.seq_len, is_inputs=key == 'inputs')
         return_dict = {
-            "query_inputs": self.inputs[edge[0]],
-            "candidate_inputs": self.inputs[edge[1]],
+            "query_inputs": query_inputs,
+            "candidate_inputs": candidate_inputs,
             "query_ridx": 0 if 'train' in self.split else self.query_ridxs[self.edge_graph_ids[idx]],
             "candidate_ridx": 0 if 'train' in self.split else self.candidate_ridxs[idx],
             "label": self.labels[idx] if self.labels is not None else None
@@ -148,7 +174,8 @@ def collate_fn(batch):
 def create_loader(config, split):
     dataset = Dataset(config, split)
     shuffle = 'train' in split
-    loader = torch.utils.data.DataLoader(dataset, batch_size=config.train.batch_size,
+    batch_size = config.train.batch_size if 'train' in split else config.train.eval_batch_size
+    loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=shuffle, num_workers=config.data.num_workers, collate_fn=collate_fn)
     return loader
 
