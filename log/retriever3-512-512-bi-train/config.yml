@@ -1,0 +1,41 @@
+data:
+    augmentation: false
+    candidate_seq_len: 512
+    label_type: retrieve3
+    num_classes: 2
+    num_workers: 12
+    path: ../data/origin
+    query_seq_len: 512
+log_dir: ../log/
+mode: train
+model:
+    device: cuda:3
+    device_ids:
+    - 3
+    encoder: ../models/Lawformer
+    head: cosine
+    loss_fn: MSELoss
+    pooler: mean
+    type: bi
+optimizer:
+    accumulation_steps: 1
+    lr: 2.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+- 10
+title: retriever3-512-512-bi-train
+train:
+    batch_size: 22
+    eval_batch_size: 200
+    num_epochs: 2
+use_wandb: false

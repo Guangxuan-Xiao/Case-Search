@@ -26,8 +26,8 @@ def check_ncdg(rank_dict, label_dict):
 
 
 stage1_score_file = '/home/xgx/search-engine-project/log/retriever1-512-512-bi/1/val-scores.json'
-stage2_score_file = '/home/xgx/search-engine-project/log/retriever2-512-512-bi/2/val-scores.json'
-stage3_score_file = '/home/xgx/search-engine-project/log/retriever3-512-512-bi/1/val-scores.json'
+stage2_score_file = '/home/xgx/search-engine-project/log/retriever2-512-512-bi-train/1/val-scores.json'
+stage3_score_file = '/home/xgx/search-engine-project/log/retriever3-512-512-bi-train/1/val-scores.json'
 label_file = '/home/xgx/search-engine-project/data/origin/val/label_top30_dict.json'
 with open(stage1_score_file, 'r') as f:
     stage1_scores = json.load(f)

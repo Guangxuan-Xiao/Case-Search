@@ -3,7 +3,7 @@ data:
     num_classes: 4
     num_workers: 12
     path: ../data/summary
-    seq_len: 256
+    seq_len: 1024
 log_dir: ../log/
 mode: train_dev
 model:
