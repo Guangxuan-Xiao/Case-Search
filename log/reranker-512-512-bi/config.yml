@@ -1,0 +1,35 @@
+data:
+    augmentation: false
+    candidate_seq_len: 512
+    label_type: rerank
+    num_classes: 3
+    num_workers: 12
+    path: ../data/origin
+    query_seq_len: 512
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:3
+    device_ids:
+    - 3
+    dropout: 0.1
+    encoder: ../models/Lawformer
+    head: cosine
+    loss_fn: MSELoss
+    pooler: mean
+    type: bi
+optimizer:
+    accumulation_steps: 1
+    lr: 2.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+title: reranker-512-512-bi
+train:
+    batch_size: 22
+    eval_batch_size: 200
+    num_epochs: 5
+use_wandb: false

@@ -1,0 +1,12 @@
+{
+    "best_val_metric": 0.3838668842526043,
+    "best_val_metric_std": 0.0,
+    "epoch": 4.0,
+    "epoch_std": 0.0,
+    "train_loss": 0.3362644921600549,
+    "train_loss_std": 0.0,
+    "val_loss": 1.3909748610523012,
+    "val_loss_std": 0.0,
+    "val_metric": 0.3838668842526043,
+    "val_metric_std": 0.0
+}

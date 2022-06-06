@@ -1,0 +1,34 @@
+data:
+    augmentation: false
+    candidate_seq_len: 1024
+    num_classes: 4
+    num_workers: 12
+    path: ../data/origin
+    query_seq_len: 512
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:2
+    device_ids:
+    - 2
+    - 3
+    dropout: 0.1
+    encoder: ../models/Lawformer
+    head: cosine
+    loss_fn: MSELoss
+    pooler: mean
+    type: bi
+optimizer:
+    lr: 1.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+title: basic-256-512
+train:
+    batch_size: 20
+    eval_batch_size: 100
+    num_epochs: 5
+use_wandb: false

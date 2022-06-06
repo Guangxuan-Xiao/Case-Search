@@ -6,7 +6,9 @@ from icecream import ic
 from tqdm import trange
 from copy import copy
 
+
 class Batch(NamedTuple):
+    concat_inputs: dict
     query_inputs: dict
     candidate_inputs: dict
     query_ridxs: torch.Tensor
@@ -15,6 +17,7 @@ class Batch(NamedTuple):
 
     def to(self, device):
         return Batch(
+            {k: v.to(device) for k, v in self.concat_inputs.items()},
             {k: v.to(device) for k, v in self.query_inputs.items()},
             {k: v.to(device) for k, v in self.candidate_inputs.items()},
             self.query_ridxs.to(device),
@@ -23,7 +26,7 @@ class Batch(NamedTuple):
         )
 
 
-def pad_sequence(sequences, max_len, pad_value=0, is_inputs=False):
+def pad_sequence(sequences, max_len, pad_value=0, is_input_ids=False):
     # sequences: Tensor [batch_size, max_len]
     # max_len: int
     # pad_value: int
@@ -35,7 +38,7 @@ def pad_sequence(sequences, max_len, pad_value=0, is_inputs=False):
         sequences = torch.cat((sequences, pad), dim=1)
     else:
         sequences = sequences[:, :max_len]
-        if is_inputs:
+        if is_input_ids:
             sequences[:, -1] = 102
     return sequences
 
@@ -89,6 +92,25 @@ def augment_edges(edges, edges_graph_ids, labels):
     return edges, labels
 
 
+def concat_input(input_a, input_b, a_max_len, b_max_len, is_input_ids=False):
+    a_len = input_a.size(1)
+    b_len = input_b.size(1)
+    if a_len > a_max_len:
+        input_a = input_a[:, :a_max_len]
+    if is_input_ids:
+        input_b[:, 0] = 102  # add [SEP]
+    if b_len > b_max_len:
+        input_b = input_b[:, :b_max_len]
+    if is_input_ids:
+        input_b[:, -1] = 102  # add [SEP]
+    ret_input = torch.cat((input_a, input_b), dim=1)
+    pad_len = a_max_len + b_max_len - ret_input.size(1)
+    if pad_len > 0:
+        pad = torch.full((input_a.size(0), pad_len), 0, dtype=input_a.dtype)
+        ret_input = torch.cat((ret_input, pad), dim=1)
+    return ret_input
+
+
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, config, split):
         super().__init__()
@@ -113,7 +135,46 @@ class Dataset(torch.utils.data.Dataset):
             ic(f'Augmented {split} edges, After E = {len(self.edges)}')
         self.crop_candidate = 'train' in split and config.data.crop_candidate
         self.split = split
-        self.seq_len = config.data.seq_len
+        self.query_seq_len = config.data.query_seq_len
+        self.candidate_seq_len = config.data.candidate_seq_len
+        self.model_type = config.model.type
+        if config.data.label_type is None:
+            pass
+        elif config.data.label_type == 'retrieve1':
+            if self.labels is not None:
+                self.labels = [int(x > 0) for x in self.labels]
+        elif config.data.label_type == 'retrieve2':
+            if self.labels is not None:
+                # new_labels, new_edges = [], []
+                # for idx, x in enumerate(self.labels):
+                #     if x > 0 or 'train' not in self.split:
+                #         new_edges.append(self.edges[idx])
+                #         new_labels.append(self.labels[idx])
+                # self.edges = new_edges
+                # self.labels = new_labels
+                self.labels = [int(x > 1) for x in self.labels]
+        elif config.data.label_type == 'retrieve3':
+            if self.labels is not None:
+                # new_labels, new_edges = [], []
+                # for idx, x in enumerate(self.labels):
+                #     if x > 1 or 'train' not in self.split:
+                #         new_edges.append(self.edges[idx])
+                #         new_labels.append(self.labels[idx])
+                # self.edges = new_edges
+                # self.labels = new_labels
+                self.labels = [int(x > 2) for x in self.labels]
+        elif config.data.label_type == 'rerank':
+            if self.labels is not None:
+                new_labels, new_edges = [], []
+                for idx, x in enumerate(self.labels):
+                    if x > 0:
+                        new_edges.append(self.edges[idx])
+                        new_labels.append(self.labels[idx] - 1)
+                self.edges = new_edges
+                self.labels = new_labels
+        else:
+            raise NotImplementedError(
+                f'Unknown label type {config.data.label_type}')
 
     def __len__(self):
         return len(self.edges)
@@ -122,14 +183,28 @@ class Dataset(torch.utils.data.Dataset):
         edge = self.edges[idx]
         query_inputs = copy(self.inputs[edge[0]])
         candidate_inputs = copy(self.inputs[edge[1]])
+        concat_inputs = {}
         if self.crop_candidate:
-            candidate_inputs = crop_inputs(candidate_inputs, self.seq_len)
-        for key in query_inputs.keys():
-            query_inputs[key] = pad_sequence(
-                query_inputs[key], self.seq_len, is_inputs=key == 'inputs')
-            candidate_inputs[key] = pad_sequence(
-                candidate_inputs[key], self.seq_len, is_inputs=key == 'inputs')
+            candidate_inputs = crop_inputs(
+                candidate_inputs, self.candidate_seq_len)
+
+        if self.model_type in ['bi', 'two']:
+            for key in query_inputs.keys():
+                query_inputs[key] = pad_sequence(
+                    query_inputs[key], self.query_seq_len, is_input_ids=key == 'input_ids')
+                candidate_inputs[key] = pad_sequence(
+                    candidate_inputs[key], self.candidate_seq_len, is_input_ids=key == 'input_ids')
+        elif self.model_type == "cross":
+            for key in query_inputs.keys():
+                concat_inputs[key] = concat_input(
+                    query_inputs[key], candidate_inputs[key], self.query_seq_len, self.candidate_seq_len, is_input_ids=key == 'input_ids')
+            query_inputs = {}
+            candidate_inputs = {}
+        else:
+            raise ValueError(f'Unknown model type {self.model_type}')
+
         return_dict = {
+            "concat_inputs": concat_inputs,
             "query_inputs": query_inputs,
             "candidate_inputs": candidate_inputs,
             "query_ridx": 0 if 'train' in self.split else self.query_ridxs[self.edge_graph_ids[idx]],
@@ -139,31 +214,32 @@ class Dataset(torch.utils.data.Dataset):
         return return_dict
 
 
+def collate_inputs(inputs):
+    if len(inputs) == 0 or {} in inputs:
+        return {}
+    input_ids = torch.cat([item['input_ids']
+                           for item in inputs], dim=0)
+    attention_mask = torch.cat(
+        [item['attention_mask'] for item in inputs], dim=0)
+    return {
+        'input_ids': input_ids,
+        'attention_mask': attention_mask
+    }
+
+
 def collate_fn(batch):
-    query_inputs = [item['query_inputs'] for item in batch]
-    query_input_ids = torch.cat([item['input_ids']
-                                for item in query_inputs], dim=0)
-    query_attention_mask = torch.cat(
-        [item['attention_mask'] for item in query_inputs], dim=0)
-    query_inputs = {
-        'input_ids': query_input_ids,
-        'attention_mask': query_attention_mask
-    }
-    candidate_inputs = [item['candidate_inputs'] for item in batch]
-    candidate_input_ids = torch.cat(
-        [item['input_ids'] for item in candidate_inputs], dim=0)
-    candidate_attention_mask = torch.cat(
-        [item['attention_mask'] for item in candidate_inputs], dim=0)
-    candidate_inputs = {
-        'input_ids': candidate_input_ids,
-        'attention_mask': candidate_attention_mask
-    }
+    concat_inputs = collate_inputs(
+        [item['concat_inputs'] for item in batch])
+    query_inputs = collate_inputs([item['query_inputs'] for item in batch])
+    candidate_inputs = collate_inputs(
+        [item['candidate_inputs'] for item in batch])
     query_ridxs = [item['query_ridx'] for item in batch]
     candidate_ridxs = [item['candidate_ridx'] for item in batch]
     labels = [item['label'] for item in batch]
     if None in labels:
         labels = []
-    return Batch(query_inputs,
+    return Batch(concat_inputs,
+                 query_inputs,
                  candidate_inputs,
                  torch.tensor(query_ridxs),
                  torch.tensor(candidate_ridxs),

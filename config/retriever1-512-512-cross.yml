@@ -1,0 +1,31 @@
+title: retriever1-512-512-cross
+log_dir: ../log/
+mode: train_dev
+use_wandb: False
+seeds: [1]
+data:
+  path: ../data/origin
+  num_workers: 12
+  num_classes: 2
+  query_seq_len: 512
+  candidate_seq_len: 512
+  augmentation: False
+  label_type: retrieve1
+model:
+  type: cross
+  encoder: ../models/Lawformer
+  dropout: 0.1
+  device: "cuda:1"
+  device_ids: [1]
+  loss_fn: BCEWithLogitsLoss
+  pooler: cls
+  head: regression
+optimizer:
+  accumulation_steps: 1
+  name: Adam
+  lr: 0.00002
+  scheduler: cos
+train:
+  batch_size: 20
+  eval_batch_size: 100
+  num_epochs: 5

@@ -4,6 +4,7 @@ from spacecutter.models import LogisticCumulativeLink
 from spacecutter.losses import CumulativeLinkLoss
 from icecream import ic
 
+
 class MLP(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
         super(MLP, self).__init__()
@@ -68,6 +69,7 @@ class OrdinalClassificationLoss(nn.Module):
         loss = self.loss(pred, expanded_label)
         return loss
 
+
 class BCELoss(nn.Module):
     def __init__(self, num_classes):
         super(BCELoss, self).__init__()
@@ -79,6 +81,39 @@ class BCELoss(nn.Module):
         loss = self.loss(score, label.float() / (self.num_classes - 1))
         return loss
 
+
+class BCEWithLogitsLoss(nn.Module):
+    def __init__(self, num_classes):
+        super(BCEWithLogitsLoss, self).__init__()
+        self.num_classes = num_classes
+        self.loss = nn.BCEWithLogitsLoss()
+
+    def forward(self, logits, label):
+        # score: (batch_size, num_classes), label: (batch_size, 1)
+        loss = self.loss(logits, label.float() / (self.num_classes - 1))
+        return loss
+
+
+class CrossEntropyLoss(nn.Module):
+    def __init__(self):
+        super(CrossEntropyLoss, self).__init__()
+        self.loss = nn.CrossEntropyLoss()
+
+    def forward(self, logits, labels):
+        loss = self.loss(logits, labels.flatten())
+        return loss
+
+
+class NumberMSELoss(nn.Module):
+    def __init__(self):
+        super(NumberMSELoss, self).__init__()
+        self.loss = nn.MSELoss()
+
+    def forward(self, score, label):
+        loss = self.loss(score, label)
+        return loss
+
+
 def create_loss_fn(config):
     if config.model.loss_fn == 'OrdinalRegressionLoss':
         return OrdinalRegressionLoss(config.data.num_classes)
@@ -88,5 +123,11 @@ def create_loss_fn(config):
         return OrdinalClassificationLoss(config.data.num_classes)
     elif config.model.loss_fn == 'BCELoss':
         return BCELoss(config.data.num_classes)
+    elif config.model.loss_fn == 'CrossEntropyLoss':
+        return CrossEntropyLoss()
+    elif config.model.loss_fn == 'BCEWithLogitsLoss':
+        return BCEWithLogitsLoss(config.data.num_classes)
+    elif config.model.loss_fn == 'NumberMSELoss':
+        return NumberMSELoss()
     else:
         raise ValueError("Unknown loss type {}".format(config.model.loss_fn))

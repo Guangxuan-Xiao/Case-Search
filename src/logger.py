@@ -37,10 +37,13 @@ class Logger:
     def dump_model(self, model):
         torch.save(model.state_dict(), osp.join(self.log_dir, 'model.pth'))
 
-    def write_predictions(self, predictions):
-        with open(osp.join(self.log_dir, 'predictions.json'), 'w+') as f:
+    def load_model(self):
+        return torch.load(osp.join(self.log_dir, 'model.pth'))
+
+    def write_predictions(self, predictions, prefix='test-'):
+        with open(osp.join(self.log_dir, prefix+'predictions.json'), 'w+') as f:
             json.dump(predictions, f)
 
-    def write_scores(self, scores):
-        with open(osp.join(self.log_dir, 'scores.json'), 'w+') as f:
+    def write_scores(self, scores, prefix='test-'):
+        with open(osp.join(self.log_dir, prefix+'scores.json'), 'w+') as f:
             json.dump(scores, f)

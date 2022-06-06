@@ -36,7 +36,11 @@ if __name__ == "__main__":
         for file_ in files:
             file_json = json.load(
                 open(os.path.join(input_candidate_path, query, file_), 'r'))
-            a = jieba.cut(file_json['ajjbqk'], cut_all=False)
+            all_text = ''
+            for key in ['ajjbqk' 'cpfxgc', 'pjjg', 'qw']:
+                if key in file_json:
+                    all_text += file_json[key]
+            a = jieba.cut(all_text, cut_all=False)
             tem = " ".join(a).split()
             corpus.append([i for i in tem if not i in stopwords])
         bm25Model = bm25.BM25(corpus)
@@ -47,8 +51,8 @@ if __name__ == "__main__":
         q = [i for i in tem if not i in stopwords]
         raw_rank_index = np.array(
             bm25Model.get_scores(q)).argsort().tolist()[::-1]
-        result[query] = [int(files[i].split('.')[0]) for i in raw_rank_index]
+        result[query] = [files[i].split('.')[0] for i in raw_rank_index]
 
-    json.dump(result, open(os.path.join(output_path, 'baseline.json'),
+    json.dump(result, open(output_path,
               "w", encoding="utf8"), indent=2, ensure_ascii=False, sort_keys=True)
     print('ouput done.')

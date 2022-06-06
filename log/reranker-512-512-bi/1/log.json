@@ -1,0 +1,4 @@
+{'epoch': 0, 'train_loss': 0, 'val_loss': 0.18603171408176422, 'val_metric': 0.7190218567848206}
+{'epoch': 0, 'train_loss': 0, 'val_loss': 0.18291378517945608, 'val_metric': 0.7471498787403107}
+{'epoch': 0, 'train_loss': 0, 'val_loss': 0.18291378517945608, 'val_metric': 0.7471498787403107}
+{'epoch': 1, 'train_loss': 0.11814189796794707, 'val_loss': 0.0881460929910342, 'val_metric': 0.8527839660644532}

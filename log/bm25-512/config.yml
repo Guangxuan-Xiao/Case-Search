@@ -1,8 +1,10 @@
 data:
     augmentation: false
+    candidate_seq_len: 512
     num_classes: 4
     num_workers: 12
     path: ../data/bm25
+    query_seq_len: 256
     seq_len: 512
 log_dir: ../log/
 mode: train_dev
@@ -13,8 +15,10 @@ model:
     - 3
     dropout: 0.1
     encoder: ../models/Lawformer
-    head: cosine
-    loss_fn: MSELoss
+    head: regression
+    loss_fn: BCEWithLogitsLoss
+    pooler: cls
+    type: cross
 optimizer:
     lr: 1.0e-05
     name: Adam
@@ -27,5 +31,5 @@ title: bm25-512
 train:
     batch_size: 40
     eval_batch_size: 100
-    num_epochs: 3
+    num_epochs: 20
 use_wandb: false

@@ -29,7 +29,7 @@ def get_text_after_last_startword(text):
 
 def split_sentence(text):
     text = text.strip()
-    for sent in re.findall(u'[^!?。：；、\!\?]+[!?。：、；\!\?]?', text, flags=re.U):
+    for sent in re.findall(u'[^!?。：；\!\?]+[!?。：、\!\?]?', text, flags=re.U):
         sent = sent.strip()
         if sent != '':
             yield sent

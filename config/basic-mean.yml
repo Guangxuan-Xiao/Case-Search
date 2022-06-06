@@ -10,6 +10,7 @@ data:
   seq_len: 512
   augmentation: False
 model:
+  type: bi
   encoder: ../models/Lawformer
   dropout: 0.1
   device: "cuda:2"

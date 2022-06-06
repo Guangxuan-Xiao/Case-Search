@@ -1,4 +1,4 @@
-title: basic-512-bs=40
+title: basic-512-1024-cross
 log_dir: ../log/
 mode: train_dev
 use_wandb: False
@@ -7,21 +7,24 @@ data:
   path: ../data/origin
   num_workers: 12
   num_classes: 4
-  seq_len: 512
+  query_seq_len: 512
+  candidate_seq_len: 1024
   augmentation: False
 model:
+  type: cross
   encoder: ../models/Lawformer
   dropout: 0.1
   device: "cuda:2"
   device_ids: [2, 3]
-  loss_fn: MSELoss
-  pooler: mean
-  head: cosine
+  loss_fn: BCEWithLogitsLoss
+  pooler: cls
+  head: regression
 optimizer:
+  accumulation_steps: 1
   name: Adam
-  lr: 0.00001
+  lr: 0.00002
   scheduler: cos
 train:
-  batch_size: 40
+  batch_size: 25
   eval_batch_size: 100
-  num_epochs: 5
+  num_epochs: 10
