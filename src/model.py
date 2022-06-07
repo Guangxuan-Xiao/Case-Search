@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from icecream import ic
 from numpy import genfromtxt
-from transformers import AutoModel
+from transformers import AutoModel, AutoModelForSequenceClassification
 from loss import create_loss_fn
 
 
@@ -71,6 +71,7 @@ class TwoEncoder(torch.nn.Module):
             return scores, loss
         return scores
 
+
 class BiEncoder(torch.nn.Module):
     def __init__(self, config):
         super(BiEncoder, self).__init__()
@@ -108,32 +109,15 @@ class BiEncoder(torch.nn.Module):
 class CrossEncoder(torch.nn.Module):
     def __init__(self, config):
         super(CrossEncoder, self).__init__()
-        self.encoder = AutoModel.from_pretrained(config.model.encoder)
-        if config.model.pooler == 'mean':
-            self.pooler = mean_pooling
-        elif config.model.pooler == 'cls':
-            self.pooler = cls_pooling
-        else:
-            raise ValueError(f'Unknown pooler: {config.model.pooler}')
-        if config.model.head == 'regression':
-            self.head = nn.Linear(self.encoder.config.hidden_size, 1)
-        elif config.model.head == 'classification':
-            self.head = nn.Linear(
-                self.encoder.config.hidden_size, config.data.num_classes)
-        else:
-            raise ValueError(f'Unknown head: {config.model.head}')
-        self.fc = nn.Linear(self.encoder.config.hidden_size, 1)
+        self.encoder = AutoModelForSequenceClassification.from_pretrained(
+            config.model.encoder, num_labels=1, ignore_mismatched_sizes=True)
         self.loss_fn = create_loss_fn(config)
 
     def forward(self, batch):
         input_dict = batch.concat_inputs
-        x = self.encoder(**input_dict)['last_hidden_state']
-        x = self.pooler(x, input_dict['attention_mask'])
-        logits = self.head(x)
-        if logits.size(1) == 1:
-            scores = torch.sigmoid(logits)
-        else:
-            scores = torch.argmax(logits, dim=1)
+        x = self.encoder(**input_dict)
+        logits = x['logits']
+        scores = torch.sigmoid(logits)
         if batch.labels.numel() > 0:
             loss = self.loss_fn(logits, batch.labels)
             return scores, loss

@@ -39,7 +39,7 @@ def agg_scores(log_dir):
         seed_dir = osp.join(log_dir, seed)
         if not osp.isdir(seed_dir):
             continue
-        score_file = osp.join(seed_dir, 'scores.json')
+        score_file = osp.join(seed_dir, 'test-scores.json')
         if not osp.isfile(score_file):
             continue
         with open(score_file) as f:

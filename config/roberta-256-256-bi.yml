@@ -1,0 +1,29 @@
+title: roberta-256-256-bi-train
+log_dir: ../log/
+mode: train
+use_wandb: False
+seeds: [1, 2, 3, 4, 5]
+data:
+  path: ../data/origin
+  num_workers: 12
+  num_classes: 4
+  query_seq_len: 256
+  candidate_seq_len: 256
+  augmentation: False
+model:
+  type: bi
+  encoder: ../models/chinese-roberta-wwm-ext
+  device: "cuda:3"
+  device_ids: [3]
+  loss_fn: MSELoss
+  pooler: mean
+  head: cosine
+optimizer:
+  accumulation_steps: 1
+  name: Adam
+  lr: 0.00002
+  scheduler: cos
+train:
+  batch_size: 32
+  eval_batch_size: 200
+  num_epochs: 4

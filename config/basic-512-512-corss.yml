@@ -1,4 +1,4 @@
-title: basic-256-512-corss
+title: basic-512-512-corss
 log_dir: ../log/
 mode: train_dev
 use_wandb: False
@@ -7,23 +7,24 @@ data:
   path: ../data/origin
   num_workers: 12
   num_classes: 4
-  query_seq_len: 256
+  query_seq_len: 512
   candidate_seq_len: 512
   augmentation: False
 model:
   type: cross
-  encoder: ../models/Lawformer
+  encoder: ../models/chinese-roberta-wwm-ext
   dropout: 0.1
-  device: "cuda:2"
-  device_ids: [2, 3]
+  device: "cuda:1"
+  device_ids: [1, 2]
   loss_fn: BCEWithLogitsLoss
   pooler: cls
   head: regression
 optimizer:
+  accumulation_steps: 1
   name: Adam
   lr: 0.00001
   scheduler: cos
 train:
-  batch_size: 40
+  batch_size: 32
   eval_batch_size: 100
   num_epochs: 20

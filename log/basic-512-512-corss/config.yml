@@ -1,0 +1,35 @@
+data:
+    augmentation: false
+    candidate_seq_len: 256
+    num_classes: 4
+    num_workers: 12
+    path: ../data/origin
+    query_seq_len: 256
+log_dir: ../log/
+mode: train_dev
+model:
+    device: cuda:1
+    device_ids:
+    - 1
+    - 2
+    dropout: 0.1
+    encoder: ../models/chinese-roberta-wwm-ext
+    head: regression
+    loss_fn: BCEWithLogitsLoss
+    pooler: cls
+    type: cross
+optimizer:
+    accumulation_steps: 1
+    lr: 1.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+title: basic-512-512-corss
+train:
+    batch_size: 32
+    eval_batch_size: 100
+    num_epochs: 20
+use_wandb: false
