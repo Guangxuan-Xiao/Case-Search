@@ -1,0 +1,31 @@
+title: retriever1-512-512-bi-train
+log_dir: ../log/
+mode: train
+use_wandb: False
+seeds: [11, 12, 13, 14]
+data:
+  path: ../data/origin
+  num_workers: 12
+  num_classes: 2
+  query_seq_len: 512
+  candidate_seq_len: 512
+  augmentation: False
+  label_type: retrieve1
+model:
+  type: bi
+  encoder: ../models/Lawformer
+  dropout: 0.1
+  device: "cuda:1"
+  device_ids: [1]
+  loss_fn: MSELoss
+  pooler: mean
+  head: cosine
+optimizer:
+  accumulation_steps: 1
+  name: Adam
+  lr: 0.00002
+  scheduler: cos
+train:
+  batch_size: 22
+  eval_batch_size: 100
+  num_epochs: 4
