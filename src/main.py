@@ -5,7 +5,7 @@ from model import create_model
 from data import create_loaders
 from trainer import Trainer
 from logger import Logger
-from agg_results import agg_results
+from agg_results import agg_results, agg_scores
 import os.path as osp
 
 if __name__ == "__main__":
@@ -35,3 +35,4 @@ if __name__ == "__main__":
         if config.use_wandb:
             run.finish()
     agg_res = agg_results(osp.join(config.log_dir, config.title))
+    agg_scores(agg_res, osp.join(config.log_dir, config.title))

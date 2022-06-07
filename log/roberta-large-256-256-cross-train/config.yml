@@ -1,0 +1,36 @@
+data:
+    augmentation: false
+    candidate_seq_len: 256
+    num_classes: 4
+    num_workers: 12
+    path: ../data/origin
+    query_seq_len: 256
+log_dir: ../log/
+mode: train
+model:
+    device: cuda:2
+    device_ids:
+    - 2
+    dropout: 0.1
+    encoder: ../models/chinese-roberta-wwm-ext-large
+    head: regression
+    loss_fn: BCEWithLogitsLoss
+    pooler: cls
+    type: cross
+optimizer:
+    accumulation_steps: 1
+    lr: 2.0e-05
+    name: Adam
+    scheduler: cos
+seeds:
+- 1
+- 2
+- 3
+- 4
+- 5
+title: roberta-large-256-256-cross-train
+train:
+    batch_size: 16
+    eval_batch_size: 100
+    num_epochs: 2
+use_wandb: false

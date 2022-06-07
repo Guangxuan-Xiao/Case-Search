@@ -124,7 +124,7 @@ class Trainer:
 
     def train(self):
         for self.epoch in range(0, self.config.train.num_epochs + 1):
-            train_loss = self.train_epoch() if self.epoch > 0 else 0
+            train_loss = self.train_epoch() # if self.epoch > 0 else 0
             val_loss, val_metric, val_predictions, val_scores = self.valid_epoch()
             epoch_dict = {
                 "epoch": self.epoch,
